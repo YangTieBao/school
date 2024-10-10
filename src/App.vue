@@ -1,5 +1,17 @@
 <template>
-  <div id="app">该前端</div>
+  <div id="app">
+    <router-view></router-view>
+  </div>
 </template>
 <style>
+* {
+  margin: 0;
+  padding: 0;
+}
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+}
 </style>
