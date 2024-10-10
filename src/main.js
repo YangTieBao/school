@@ -10,6 +10,8 @@ Vue.use(ElementUI);
 
 Vue.config.productionTip = false
 
+Vue.prototype.$global = { baseUrl: 'http://localhost:3000' }
+
 new Vue({
   router,
   store,

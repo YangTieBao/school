@@ -3,7 +3,7 @@
     <img src="../../../public/phone/hngcxy.png" class="img" />
     <div class="main">
       <div class="search">
-        <el-input v-model="searchQuery"></el-input>
+        <el-input v-model="searchValue"></el-input>
         <i class="iconfont icon-sousuo"></i>
       </div>
       <i class="iconfont icon-xiaoxi-lingdang"></i>
@@ -18,6 +18,7 @@
 export default {
   data() {
     return {
+      searchValue:'',
       name: "张三",
     };
   },
