@@ -263,12 +263,23 @@ const fetchDatas = {
 }
 
 // 封装一个函数，用于从数据库查询数据并格式化日期字段
-const fetchDataForm = async (table, fields, req, res) => {
+const fetchDataForm = async (table, fields, req, res, joinTable = null, joinCondition = null) => {
     try {
-        const { pageSize, currentPage } = req.body;
+        const { pageSize, currentPage } = req.body; // 支持通过班级ID进行查询
 
         // 1. 构建查询总数的Promise
-        const sqlCount = `SELECT COUNT(*) as count FROM ${table}`;
+        let sqlCount = `SELECT COUNT(*) as count FROM ${table}`;
+        let sqlData = `SELECT * FROM ${table}`;
+
+        // 如果存在联合查询表和条件，则添加 JOIN 语句
+        if (joinTable && joinCondition) {
+            sqlCount += ` JOIN ${joinTable} ON ${joinCondition}`;
+            sqlData += ` JOIN ${joinTable} ON ${joinCondition}`;
+        }
+
+        sqlData += ` LIMIT ${(currentPage - 1) * pageSize},${pageSize}`;
+
+        // 查询总数
         const totalPromise = new Promise((resolve, reject) => {
             db.query(sqlCount, (err, results) => {
                 if (err) {
@@ -280,10 +291,9 @@ const fetchDataForm = async (table, fields, req, res) => {
             });
         });
 
-        // 2. 构建查询分页数据的Promise
-        const sql = `SELECT * FROM ${table} LIMIT ${(currentPage - 1) * pageSize},${pageSize}`;
+        // 查询数据
         const dataPromise = new Promise((resolve, reject) => {
-            db.query(sql, (err, results) => {
+            db.query(sqlData, (err, results) => {
                 if (err) {
                     console.error('查询数据库出错:', err);
                     return reject('数据库查询错误');
@@ -299,10 +309,9 @@ const fetchDataForm = async (table, fields, req, res) => {
                     }
                 });
 
-                // 根据配置的字段映射数据库数据
+                // 映射数据库数据
                 const tableData = results.map((item, index) => {
                     const row = { index: (currentPage - 1) * pageSize + index + 1 };
-
                     fields.forEach(field => {
                         if (field.prop !== 'index') {
                             row[field.prop] = item[field.prop]; // 动态映射字段
@@ -315,10 +324,10 @@ const fetchDataForm = async (table, fields, req, res) => {
             });
         });
 
-        // 3. 等待两个Promise都完成
+        // 等待两个Promise都完成
         const [total, tableData] = await Promise.all([totalPromise, dataPromise]);
 
-        // 4. 返回结果给前端
+        // 返回结果给前端
         res.send({
             total,       // 总数
             tableName: fields, // 字段名
@@ -329,6 +338,7 @@ const fetchDataForm = async (table, fields, req, res) => {
         res.status(500).send('服务器内部错误');
     }
 };
+
 
 
 //渲染每个管理的数据
