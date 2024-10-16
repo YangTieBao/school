@@ -51,11 +51,15 @@ const deleteDataToTable = (table, idField, idValue, res) => {
 
         // 执行删除操作
         db.query(sql, [idValue], (err, results) => {
-            if (err) {
-                console.error('删除数据时出错:', err);
-                return res.status(500).send('删除数据时发生错误');
+            try {
+                if (err) {
+                    console.error('删除数据时出错:', err);
+                    return res.status(500).send('删除数据时发生错误');
+                }
+                res.send({ message: '删除数据成功！' });
+            } catch (err) {
+                console.error(err)
             }
-            res.send({ message: '删除数据成功！' });
         });
     } catch (err) {
         console.log(err)
@@ -66,7 +70,6 @@ const deleteDataToTable = (table, idField, idValue, res) => {
 router.post('/deleteData', (req, res) => {
     try {
         const { index, deleteData } = req.body;
-        console.log(deleteData)
         if (deleteDataFunctions[index]) {
             deleteDataFunctions[index](deleteData, res);
         } else {
@@ -81,7 +84,6 @@ router.post('/deleteData', (req, res) => {
 router.post('/deleteSelectedData', (req, res) => {
     try {
         const { index, deleteData } = req.body;
-        console.log(deleteData)
         if (deleteDataFunctions[index]) {
             deleteDataFunctions[index](deleteData, res);
         } else {

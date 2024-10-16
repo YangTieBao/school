@@ -13,73 +13,98 @@ const queryDataFunctions = {
     },
     // 学生管理
     '2': (queryData, req, res) => {
-        const fields = ['s_id', 'c_id', 'name'];
-        queryDataFromTable('t_students', fields, queryData, req, res);
+        const fields = ['s_id', 'name'];
+        queryDataFromTable('t_students', fields, queryData, req, res, ['t_class'], ['t_students.c_id=t_class.c_id']);
     },
     // 班级管理
     '3': (queryData, req, res) => {
-        const fields = ['c_id', 'c_name', 'group_no'];
+        const fields = ['c_name', 'group_no'];
         queryDataFromTable('t_class', fields, queryData, req, res);
     },
     // 排课管理
     '4': (queryData, req, res) => {
-        const fields = ['ac_id', 'c_id', 't_id', 'week', 'semester', 'co_id'];
-        queryDataFromTable('arrange_course', fields, queryData, req, res);
+        const fields = ['t_id', 'week', 'semester'];
+        queryDataFromTable('arrange_course', fields, queryData, req, res, ['t_class', 't_teacher', 't_course'], ['arrange_course.c_id=t_class.c_id', 'arrange_course.t_id=t_teacher.t_id', 'arrange_course.co_id=t_course.co_id']);
     },
     // 周历管理
     '5': (queryData, req, res) => {
-        const fields = ['w_id', 'week', 'semester'];
+        const fields = ['week', 'semester'];
         queryDataFromTable('t_weekly', fields, queryData, req, res);
     },
     // 消息管理
     '6': (queryData, req, res) => {
-        const fields = ['m_id', 'm_name'];
+        const fields = ['m_name'];
         queryDataFromTable('t_message', fields, queryData, req, res);
     },
     // 成绩管理
     '7': (queryData, req, res) => {
-        const fields = ['ts_id', 's_id', 'grade'];
-        queryDataFromTable('total_score', fields, queryData, req, res);
+        const fields = ['s_id'];
+        queryDataFromTable('total_score', fields, queryData, req, res, ['t_students'], ['total_score.s_id=t_students.s_id']);
     }
 };
 
 // 封装一个通用的函数用于根据多个条件查询数据（使用 OR）
-const queryDataFromTable = async (table, fields, queryData, req, res) => {
+const queryDataFromTable = async (table, fields, queryData, req, res, joinTables = [], joinConditions = []) => {
     try {
         const { pageSize, currentPage } = req.body;
 
-        const conditions = [];
-
-        // 构建查询条件的 SQL 语句，每个字段都与 queryData 比较
-        fields.forEach(field => {
-            conditions.push(`${field} = ?`);
-        });
-
+        // 构建查询条件
+        const conditions = fields.map(field => `${table}.${field} = ?`);
         const whereClause = conditions.join(' OR ');
 
-        // 1. 构建查询总数的Promise
-        const sqlCount = `SELECT COUNT(*) as count FROM ${table} WHERE ${whereClause}`;
-        const values = Array(fields.length).fill(queryData); // 创建对应数量的参数数组，重复 queryData 值
+        // 构建联合查询的部分
+        let joinClause = '';
+        if (joinTables.length > 0 && joinConditions.length > 0) {
+            joinTables.forEach((joinTable, index) => {
+                joinClause += ` JOIN ${joinTable} ON ${joinConditions[index]}`;
+            });
+        }
+
+        // 1. 构建查询总数的 SQL 语句
+        const sqlCount = `SELECT COUNT(*) as count FROM ${table} ${joinClause} WHERE ${whereClause}`;
+        const values = Array(fields.length).fill(queryData); // 创建参数数组，重复 queryData 值
         const totalPromise = new Promise((resolve, reject) => {
             db.query(sqlCount, values, (err, results) => {
-                if (err) {
-                    console.error('查询总数时出错:', err);
-                    return reject('查询总数时发生错误');
+                try {
+                    if (err) {
+                        console.error('查询总数时出错:', err);
+                        return reject('查询总数时发生错误');
+                    }
+                    const total = results[0].count;
+                    resolve(total);
+                } catch (err) {
+                    console.error(err)
                 }
-                const total = results[0].count;
-                resolve(total);
             });
         });
 
-        // 2. 构建查询数据的Promise
-        const sqlData = `SELECT * FROM ${table} WHERE ${whereClause} LIMIT ${(currentPage - 1) * pageSize},${pageSize}`;
+        // 2. 构建查询数据的 SQL 语句
+        const sqlData = `SELECT * FROM ${table} ${joinClause} WHERE ${whereClause} LIMIT ${(currentPage - 1) * pageSize}, ${pageSize}`;
         const dataPromise = new Promise((resolve, reject) => {
             db.query(sqlData, values, (err, results) => {
-                if (err) {
-                    console.error('查询数据时出错:', err);
-                    return reject('查询数据时发生错误');
+                try {
+                    if (err) {
+                        console.error('查询数据时出错:', err);
+                        return reject('查询数据时发生错误');
+                    }
+                    resolve(results);
+                    // 格式化日期字段
+                    results.forEach(item => {
+                        if (item.s_time) {
+                            item.s_time = moment(item.s_time).format('YYYY-MM-DD HH:mm:ss');
+                        }
+                        if (item.e_time) {
+                            item.e_time = moment(item.e_time).format('YYYY-MM-DD HH:mm:ss');
+                        }
+                        if (item.is_last != 0) {
+                            item.is_last = '是'
+                        } else {
+                            item.is_last = '否'
+                        }
+                    });
+                } catch (err) {
+                    console.error(err)
                 }
-                resolve(results);
             });
         });
 
@@ -101,6 +126,7 @@ const queryDataFromTable = async (table, fields, queryData, req, res) => {
         res.status(500).send('服务器内部错误');
     }
 };
+
 
 // 查询数据操作的 API
 router.post('/queryData', (req, res) => {

@@ -15,15 +15,16 @@ const fetchDatas = {
                 prop: 'index'
             },
             {
-                label: '工号',
-                prop: 't_id',
-                type: 'number',
-                isDisabled: false
-            },
-            {
                 label: '姓名',
                 prop: 't_name',
                 type: 'text'
+            },
+            {
+                label: '工号',
+                prop: 't_id',
+                type: 'number',
+                isDisabled: false,
+                isshow: true
             },
             {
                 label: '电话',
@@ -45,22 +46,29 @@ const fetchDatas = {
                 prop: 'index'
             },
             {
-                label: '学号',
-                prop: 's_id',
-                type: 'number',
-                isDisabled: false
-            },
-            {
-                label: '班级ID',
-                prop: 'c_id',
-                type: 'number'
-            },
-            {
                 label: '姓名',
                 prop: 'name',
                 type: 'text'
-            }]
-        fetchDataForm('t_students', tableName, req, res)
+            },
+            {
+                label: '学号',
+                prop: 's_id',
+                type: 'number',
+                isDisabled: false,
+                isshow: true
+            },
+            {
+                label: '班级',
+                prop: 'c_name',
+                type: 'text'
+            },
+            {
+                label: '组别',
+                prop: 'group_no',
+                type: 'number'
+            }
+        ]
+        fetchDataForm('t_students', tableName, req, res, ['t_class'], ['t_students.c_id=t_class.c_id'])
     },
     //班级管理
     '3': (req, res) => {
@@ -69,19 +77,20 @@ const fetchDatas = {
                 label: '序号',
                 prop: 'index'
             },
+            // {
+            //     label: '班级ID',
+            //     prop: 'c_id',
+            //     type: 'number',
+            //     isDisabled: false,
+            //     isshow:false
+            // },
             {
-                label: '班级ID',
-                prop: 'c_id',
-                type: 'number',
-                isDisabled: false
-            },
-            {
-                label: '班级名称',
+                label: '班级',
                 prop: 'c_name',
                 type: 'text'
             },
             {
-                label: '分组号',
+                label: '组别',
                 prop: 'group_no',
                 type: 'number'
 
@@ -95,12 +104,13 @@ const fetchDatas = {
                 label: '序号',
                 prop: 'index'
             },
-            {
-                label: 'ID',
-                prop: 'ac_id',
-                type: 'number',
-                isDisabled: false
-            },
+            // {
+            //     label: 'ID',
+            //     prop: 'ac_id',
+            //     type: 'number',
+            //     isDisabled: false,
+            //     isshow:false
+            // },
             {
                 label: '学期',
                 prop: 'semester',
@@ -122,9 +132,9 @@ const fetchDatas = {
                 type: 'number'
             },
             {
-                label: '班级ID',
-                prop: 'c_id',
-                type: 'number'
+                label: '班级',
+                prop: 'c_name',
+                type: 'text'
             },
             {
                 label: '教师工号',
@@ -132,10 +142,14 @@ const fetchDatas = {
                 type: 'number'
             },
             {
-                label: '课程号ID',
-                prop: 'co_id',
-                type: 'number'
-
+                label: '教师姓名',
+                prop: 't_name',
+                type: 'text'
+            },
+            {
+                label: '课程名',
+                prop: 'co_name',
+                type: 'text'
             },
             {
                 label: '备注',
@@ -145,11 +159,14 @@ const fetchDatas = {
             {
                 label: '是否为最后一个环节',
                 prop: 'is_last',
-                type: 'number'
-
+                type: 'radio',
+                options: [
+                    { label: '是', value: 1 },
+                    { label: '否', value: 0 }
+                ]
             }
         ]
-        fetchDataForm('arrange_course', tableName, req, res)
+        fetchDataForm('arrange_course', tableName, req, res, ['t_class', 't_teacher', 't_course'], ['arrange_course.c_id=t_class.c_id', 'arrange_course.t_id=t_teacher.t_id', 'arrange_course.co_id=t_course.co_id'])
     },
     //周历管理
     '5': (req, res) => {
@@ -158,12 +175,13 @@ const fetchDatas = {
                 label: '序号',
                 prop: 'index'
             },
-            {
-                label: 'ID',
-                prop: 'w_id',
-                type: 'number',
-                isDisabled: false
-            },
+            // {
+            //     label: 'ID',
+            //     prop: 'w_id',
+            //     type: 'number',
+            //     isDisabled: false,
+            //     isshow:false
+            // },
             {
                 label: '学期',
                 prop: 'semester',
@@ -200,12 +218,13 @@ const fetchDatas = {
                 label: '序号',
                 prop: 'index'
             },
-            {
-                label: '消息ID',
-                prop: 'm_id',
-                type: 'number',
-                isDisabled: false
-            },
+            // {
+            //     label: '消息ID',
+            //     prop: 'm_id',
+            //     type: 'number',
+            //     isDisabled: false,
+            //     isshow:false
+            // },
             {
                 label: '业务名称',
                 prop: 'm_name',
@@ -231,11 +250,17 @@ const fetchDatas = {
                 label: '序号',
                 prop: 'index'
             },
+            // {
+            //     label: 'ID',
+            //     prop: 'ts_id',
+            //     type: 'number',
+            //     isDisabled: false,
+            //     isshow:false
+            // },
             {
-                label: 'ID',
-                prop: 'ts_id',
-                type: 'number',
-                isDisabled: false
+                label: '学生姓名',
+                prop: 'name',
+                type: 'text'
             },
             {
                 label: '学号',
@@ -258,73 +283,86 @@ const fetchDatas = {
                 type: 'text'
             }
         ]
-        fetchDataForm('total_score', tableName, req, res)
+        fetchDataForm('total_score', tableName, req, res, ['t_students'], ['total_score.s_id=t_students.s_id'])
     }
 }
 
 // 封装一个函数，用于从数据库查询数据并格式化日期字段
-const fetchDataForm = async (table, fields, req, res, joinTable = null, joinCondition = null) => {
+const fetchDataForm = async (table, fields, req, res, joinTables = [], joinConditions = []) => {
     try {
-        const { pageSize, currentPage } = req.body; // 支持通过班级ID进行查询
+        const { pageSize, currentPage } = req.body;
 
-        // 1. 构建查询总数的Promise
+        // 构建基础的查询 SQL 语句
         let sqlCount = `SELECT COUNT(*) as count FROM ${table}`;
         let sqlData = `SELECT * FROM ${table}`;
 
-        // 如果存在联合查询表和条件，则添加 JOIN 语句
-        if (joinTable && joinCondition) {
-            sqlCount += ` JOIN ${joinTable} ON ${joinCondition}`;
-            sqlData += ` JOIN ${joinTable} ON ${joinCondition}`;
+        // 如果传入了联合查询的表和条件，遍历并构建 JOIN 语句
+        if (joinTables.length > 0 && joinConditions.length > 0) {
+            joinTables.forEach((joinTable, index) => {
+                sqlCount += ` JOIN ${joinTable} ON ${joinConditions[index]}`;
+                sqlData += ` JOIN ${joinTable} ON ${joinConditions[index]}`;
+            });
         }
 
+        // 加入分页的 LIMIT 语句
         sqlData += ` LIMIT ${(currentPage - 1) * pageSize},${pageSize}`;
 
         // 查询总数
         const totalPromise = new Promise((resolve, reject) => {
             db.query(sqlCount, (err, results) => {
-                if (err) {
-                    console.error('查询数据库出错:', err);
-                    return reject('数据库查询错误');
+                try {
+                    if (err) {
+                        console.error('查询数据库出错:', err);
+                        return reject('数据库查询错误');
+                    }
+                    const total = results[0].count;
+                    resolve(total);
+                } catch (err) {
+                    console.error(err)
                 }
-                const total = results[0].count;
-                resolve(total);
             });
         });
 
         // 查询数据
         const dataPromise = new Promise((resolve, reject) => {
             db.query(sqlData, (err, results) => {
-                if (err) {
-                    console.error('查询数据库出错:', err);
-                    return reject('数据库查询错误');
-                }
-
-                // 格式化日期字段
-                results.forEach(item => {
-                    if (item.s_time) {
-                        item.s_time = moment(item.s_time).format('YYYY-MM-DD HH:mm:ss');
+                try {
+                    if (err) {
+                        console.error('查询数据库出错:', err);
+                        return reject('数据库查询错误');
                     }
-                    if (item.e_time) {
-                        item.e_time = moment(item.e_time).format('YYYY-MM-DD HH:mm:ss');
-                    }
-                });
 
-                // 映射数据库数据
-                const tableData = results.map((item, index) => {
-                    const row = { index: (currentPage - 1) * pageSize + index + 1 };
-                    fields.forEach(field => {
-                        if (field.prop !== 'index') {
-                            row[field.prop] = item[field.prop]; // 动态映射字段
+                    // 格式化日期字段
+                    results.forEach(item => {
+                        if (item.s_time) {
+                            item.s_time = moment(item.s_time).format('YYYY-MM-DD HH:mm:ss');
+                        }
+                        if (item.e_time) {
+                            item.e_time = moment(item.e_time).format('YYYY-MM-DD HH:mm:ss');
+                        }
+                        if (item.is_last != 0) {
+                            item.is_last = '是'
+                        } else {
+                            item.is_last = '否'
                         }
                     });
-                    return row;
-                });
 
-                resolve(tableData);
+                    // 根据 fields 映射结果数据
+                    const tableData = results.map((item, index) => {
+                        const row = { index: (currentPage - 1) * pageSize + index + 1 };
+                        // 将整个 item 的所有字段赋值给 row，同时不覆盖已存在的 index 字段
+                        Object.assign(row, item);
+                        return row;
+                    });
+
+                    resolve(tableData);
+                } catch (err) {
+                    console.error(err)
+                }
             });
         });
 
-        // 等待两个Promise都完成
+        // 等待两个 Promise 都完成
         const [total, tableData] = await Promise.all([totalPromise, dataPromise]);
 
         // 返回结果给前端
@@ -338,7 +376,6 @@ const fetchDataForm = async (table, fields, req, res, joinTable = null, joinCond
         res.status(500).send('服务器内部错误');
     }
 };
-
 
 
 //渲染每个管理的数据

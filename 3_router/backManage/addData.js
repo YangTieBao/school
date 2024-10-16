@@ -12,7 +12,7 @@ const addDataFunctions = {
     },
     // 学生管理
     '2': (addData, res) => {
-        addDataToTable('t_students', addData, res);
+        addStudentsMsg(addData, res)
     },
     // 班级管理
     '3': (addData, res) => {
@@ -20,7 +20,7 @@ const addDataFunctions = {
     },
     // 排课管理
     '4': (addData, res) => {
-        addDataToTable('arrange_course', addData, res);
+        addArrangeMsg(addData, res)
     },
     // 周历管理
     '5': (addData, res) => {
@@ -32,6 +32,7 @@ const addDataFunctions = {
     },
     // 成绩管理
     '7': (addData, res) => {
+        delete addData.name;
         addDataToTable('total_score', addData, res);
     }
 };
@@ -43,17 +44,96 @@ const addDataToTable = (table, addData, res) => {
 
         // 执行插入操作
         db.query(sql, addData, (err, result) => {
-            if (err) {
-                console.error('插入数据时出错:', err);
-                return res.status(500).send('插入数据时发生错误');
-            }
+            try {
+                if (err) {
+                    console.error('插入数据时出错:', err);
+                    return res.status(500).send({ status: 1 });
+                }
 
-            res.send({ message: '数据添加成功', result });
+                res.send({ message: '数据添加成功', result });
+            } catch (err) {
+                console.error(err)
+            }
         });
     } catch (err) {
         console.log(err)
     }
 };
+
+//增加学生信息
+function addStudentsMsg(addData, res) {
+    try {
+        const { name, s_id, c_name, group_no } = addData
+        const sql = `select c_id as c_id from t_class where c_name = ? and group_no = ?`
+        db.query(sql, [c_name, group_no], (err, results) => {
+            try {
+                if (err) {
+                    console.error('插入数据时出错:', err);
+                    return res.status(500).send({ status: 1 });
+                }
+                if (results.length == 0) {
+                    return res.status(500).send({ status: 1 });
+                }
+                addDataToTable('t_students', { name, s_id, c_id: results[0].c_id }, res);
+            } catch (err) {
+                console.error(err)
+            }
+        })
+    } catch (err) {
+        console.error(err)
+    }
+}
+
+//增加排课信息
+async function addArrangeMsg(addData, res) {
+    try {
+        const { semester, week, day, section, c_name, t_name, t_id, co_name, demo, is_last } = addData
+        const classSql = `select c_id as c_id from t_class where c_name = ?`
+        const courseSql = `select co_id as co_id from t_course where co_name = ?`
+        //查询t_class的id
+        const classPromise = new Promise((resolve, reject) => {
+            db.query(classSql, c_name, (err, results) => {
+                try {
+                    if (err) {
+                        console.error('查询数据库出错:', err);
+                        return reject({ status: 1 });
+                    }
+                    if (results.length == 0) {
+                        return res.status(500).send({ status: 1 });
+                    }
+                    const c_id = results[0].c_id;
+                    resolve(c_id);
+                } catch (err) {
+                    console.error(err)
+                }
+            });
+        });
+
+        //查询t_course的id
+        const coursePromise = new Promise((resolve, reject) => {
+            db.query(courseSql, co_name, (err, results) => {
+                try {
+                    if (err) {
+                        console.error('查询数据库出错:', err);
+                        return reject({ status: 1 });
+                    }
+                    if (results.length == 0) {
+                        return res.status(500).send({ status: 1 });
+                    }
+                    const co_id = results[0].co_id;
+                    resolve(co_id);
+                } catch (err) {
+                    console.error(err)
+                }
+            });
+        });
+
+        const [c_id, co_id] = await Promise.all([classPromise, coursePromise]);
+        addDataToTable('arrange_course', { semester, week, day, section, c_id, t_id, co_id, demo, is_last }, res);
+    } catch (err) {
+        console.error(err)
+    }
+}
 
 // 渲染添加数据操作的 API
 router.post('/addData', (req, res) => {
