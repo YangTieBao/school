@@ -281,6 +281,11 @@ const fetchDatas = {
                 label: '成绩等级',
                 prop: 'grade',
                 type: 'text'
+            },
+            {
+                label: '所有分项课程所得分',
+                prop: 'total_sub_score',
+                type: 'text'
             }
         ]
         fetchDataForm('total_score', tableName, req, res, ['t_students'], ['total_score.s_id=t_students.s_id'])
