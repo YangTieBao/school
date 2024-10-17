@@ -24,6 +24,7 @@ const editDataFunctions = {
     },
     // 周历管理
     '5': (editData, res) => {
+        console.log(editData)
         editDataToTable('t_weekly', editData, 'w_id', editData.w_id, res);
     },
     // 消息管理

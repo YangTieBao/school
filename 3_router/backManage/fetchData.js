@@ -337,6 +337,8 @@ const fetchDataForm = async (table, fields, req, res, joinTables = [], joinCondi
                         return reject('数据库查询错误');
                     }
 
+                    console.log(results)
+
                     // 格式化日期字段
                     results.forEach(item => {
                         if (item.s_time) {
@@ -345,12 +347,15 @@ const fetchDataForm = async (table, fields, req, res, joinTables = [], joinCondi
                         if (item.e_time) {
                             item.e_time = moment(item.e_time).format('YYYY-MM-DD HH:mm:ss');
                         }
-                        if (item.is_last != 0) {
+                        if (item.is_last != 0 && (item.is_last != undefined)) {
                             item.is_last = '是'
-                        } else {
+                        }
+                        if (item.is_last == 0 && (item.is_last != undefined)) {
                             item.is_last = '否'
                         }
                     });
+
+                    console.log(results)
 
                     // 根据 fields 映射结果数据
                     const tableData = results.map((item, index) => {
