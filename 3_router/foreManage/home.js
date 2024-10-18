@@ -104,6 +104,31 @@ router.post('/getNoticeData', (req, res) => {
     }
 })
 
+//根据当前时间获取周次与学期
+router.post('/getWeek_semester', (req, res) => {
+    try {
+        const nowDate = moment(new Date()).format('YYYY-MM-DD');
+        // 查询当前日期所在的周数
+        const weekSql = `SELECT week,semester FROM t_weekly WHERE '${nowDate}' BETWEEN s_time AND e_time`;
+        db.query(weekSql, (err, weekResults) => {
+            if (err) {
+                console.error('查询周数时出错:', err);
+                return res.status(500).send('查询周数时发生错误');
+            }
+
+            if (weekResults.length === 0) {
+                return res.status(404).send('未找到当前日期对应的周数与学期');
+            }
+
+            const currentWeek = weekResults[0].week;
+            const currentSemester = weekResults[0].semester;
+            res.send({ currentSemester, currentWeek })
+        })
+    } catch (err) {
+        console.log(err)
+    }
+})
+
 //渲染学生数据
 router.post('/fetchStudentsData', (req, res) => {
     try {
@@ -249,45 +274,49 @@ router.post('/updateScore', async (req, res) => {
 //跟新学生总成绩
 router.post('/updateTotalScore', (req, res) => {
     try {
-        // const { s_id, summary_score, c_name, group_no, co_id, } = req.body;
-        const c_name = "软件工程2201班", group_no = 1, co_id = 3, s_id = 2021, summary_score = 70
+        const { s_id, summary_score, c_name, group_no, co_id, } = req.body;
+        // const c_name = "软件工程2201班", group_no = 1, co_id = 3, s_id = 2021, summary_score = 70
         checkCoursesCompletion(c_name, group_no, co_id, async (err, isshow) => {
             if (err) {
                 console.error('查询课程完成状态时出错:', err);
                 return res.status(500).send('查询课程完成状态时发生错误');
             }
             if (isshow) {
-                const total_sub_score = await getAverageScoreForStudent(s_id, res);
-                const total_score = summary_score * 0.05 + total_sub_score * 0.95;
-                const grade = (total_score) => {
-                    if (total_score >= 90) {
-                        return '优秀';      // 90-100
-                    } else if (total_score >= 80) {
-                        return '良好';      // 80-89
-                    } else if (total_score >= 70) {
-                        return '中等';      // 70-79
-                    } else if (total_score >= 60) {
-                        return '及格';      // 60-69
-                    } else {
-                        return '不及格';    // 0-59
-                    }
-                };
+                try {
+                    const total_sub_score = await getAverageScoreForStudent(s_id, res);
+                    const total_score = summary_score * 0.05 + total_sub_score * 0.95;
+                    const grade = (total_score) => {
+                        if (total_score >= 90) {
+                            return '优秀';      // 90-100
+                        } else if (total_score >= 80) {
+                            return '良好';      // 80-89
+                        } else if (total_score >= 70) {
+                            return '中等';      // 70-79
+                        } else if (total_score >= 60) {
+                            return '及格';      // 60-69
+                        } else {
+                            return '不及格';    // 0-59
+                        }
+                    };
 
-                const final_grade = grade(total_score); // 计算学生的等级
+                    const final_grade = grade(total_score); // 计算学生的等级
 
 
-                // 更新总成绩和等级到数据库
-                const updateSql = `UPDATE total_score SET summary_score = ?, total_score = ?, grade = ?,total_sub_score=? WHERE s_id = ?`;
-                db.query(updateSql, [summary_score, total_score, final_grade, total_sub_score, s_id], (err, result) => {
-                    if (err) {
-                        console.error('更新总成绩和等级时出错:', err);
-                        res.status(500).send({ message: '更新总成绩时发生错误', error: err });
-                        return;
-                    }
+                    // 更新总成绩和等级到数据库
+                    const updateSql = `UPDATE total_score SET summary_score = ?, total_score = ?, grade = ?,total_sub_score=? WHERE s_id = ?`;
+                    db.query(updateSql, [summary_score, total_score, final_grade, total_sub_score, s_id], (err, result) => {
+                        if (err) {
+                            console.error('更新总成绩和等级时出错:', err);
+                            res.status(500).send({ message: '更新总成绩时发生错误', error: err });
+                            return;
+                        }
 
-                    // 成功更新，返回响应
-                    res.send({ message: '总成绩和等级已成功更新', total_score, grade: final_grade });
-                });
+                        // 成功更新，返回响应
+                        res.send({ message: '总成绩和等级已成功更新', total_score, grade: final_grade });
+                    });
+                } catch (err) {
+                    console.error(err)
+                }
             } else {
                 res.status(500).send('该学生还有其它分项课程成绩没完成');
             }
@@ -300,61 +329,73 @@ router.post('/updateTotalScore', (req, res) => {
 
 // 方法：检查分项课程表中是否有该学生的成绩记录
 const checkIfScoreExists = (s_id, co_id, res) => {
-    return new Promise((resolve, reject) => {
-        const checkScoreSql = `SELECT * FROM course_score WHERE s_id = ? AND co_id = ?`;
-        db.query(checkScoreSql, [s_id, co_id], (err, result) => {
-            if (err) {
-                console.error('查询分项课程成绩时出错:', err);
-                res.status(500).send({ message: '查询分项课程成绩时发生错误', error: err });
-                return reject(err);
-            }
+    try {
+        return new Promise((resolve, reject) => {
+            const checkScoreSql = `SELECT * FROM course_score WHERE s_id = ? AND co_id = ?`;
+            db.query(checkScoreSql, [s_id, co_id], (err, result) => {
+                if (err) {
+                    console.error('查询分项课程成绩时出错:', err);
+                    res.status(500).send({ message: '查询分项课程成绩时发生错误', error: err });
+                    return reject(err);
+                }
 
-            if (result.length > 0) {
-                // 存在记录，返回 true
-                resolve(true);
-            } else {
-                // 不存在记录，返回 false
-                resolve(false);
-            }
+                if (result.length > 0) {
+                    // 存在记录，返回 true
+                    resolve(true);
+                } else {
+                    // 不存在记录，返回 false
+                    resolve(false);
+                }
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 // 方法：检查总成绩表中是否有该学生的成绩记录
 const checkIfTotalScoreExists = (s_id, res) => {
-    return new Promise((resolve, reject) => {
-        const checkScoreSql = `SELECT * FROM total_score WHERE s_id = ?`;
-        db.query(checkScoreSql, [s_id], (err, result) => {
-            if (err) {
-                console.error('查询总成绩时出错:', err);
-                res.status(500).send({ message: '查询总成绩时发生错误', error: err });
-                return reject(err);
-            }
+    try {
+        return new Promise((resolve, reject) => {
+            const checkScoreSql = `SELECT * FROM total_score WHERE s_id = ?`;
+            db.query(checkScoreSql, [s_id], (err, result) => {
+                if (err) {
+                    console.error('查询总成绩时出错:', err);
+                    res.status(500).send({ message: '查询总成绩时发生错误', error: err });
+                    return reject(err);
+                }
 
-            if (result.length > 0) {
-                // 存在记录，返回 true
-                resolve(true);
-            } else {
-                // 不存在记录，返回 false
-                resolve(false);
-            }
+                if (result.length > 0) {
+                    // 存在记录，返回 true
+                    resolve(true);
+                } else {
+                    // 不存在记录，返回 false
+                    resolve(false);
+                }
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 // 方法：创建分项课程成绩
 const createSubScore = (insertData, res) => {
-    return new Promise((resolve, reject) => {
-        const insertScoreSql = `INSERT INTO course_score SET ?`;
-        db.query(insertScoreSql, insertData, (err, result) => {
-            if (err) {
-                console.error('插入分项课程成绩时出错:', err);
-                res.status(500).send({ message: '插入分项课程成绩时发生错误', error: err });
-                return reject(err);
-            }
-            resolve(result);
+    try {
+        return new Promise((resolve, reject) => {
+            const insertScoreSql = `INSERT INTO course_score SET ?`;
+            db.query(insertScoreSql, insertData, (err, result) => {
+                if (err) {
+                    console.error('插入分项课程成绩时出错:', err);
+                    res.status(500).send({ message: '插入分项课程成绩时发生错误', error: err });
+                    return reject(err);
+                }
+                resolve(result);
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 // 方法：创建总成绩表记录
@@ -375,85 +416,100 @@ const createTotalScore = (s_id, res) => {
 
 // 方法：更新分项课程成绩
 const updateSubScore = (insertData, res) => {
-    return new Promise((resolve, reject) => {
-        const updateScoreSql = `UPDATE course_score SET report_score = ?, practice_score = ?, sub_score = ?
-                                WHERE s_id = ? AND co_id = ?`;
-        const { report_score, practice_score, sub_score, s_id, co_id } = insertData;
-        db.query(updateScoreSql, [report_score, practice_score, sub_score, s_id, co_id], (err, result) => {
-            if (err) {
-                console.error('更新分项课程成绩时出错:', err);
-                res.status(500).send({ message: '更新分项课程成绩时发生错误', error: err });
-                return reject(err);
-            }
-            resolve(result);
+    try {
+        return new Promise((resolve, reject) => {
+            const updateScoreSql = `UPDATE course_score SET report_score = ?, practice_score = ?, sub_score = ?
+                                    WHERE s_id = ? AND co_id = ?`;
+            const { report_score, practice_score, sub_score, s_id, co_id } = insertData;
+            db.query(updateScoreSql, [report_score, practice_score, sub_score, s_id, co_id], (err, result) => {
+                if (err) {
+                    console.error('更新分项课程成绩时出错:', err);
+                    res.status(500).send({ message: '更新分项课程成绩时发生错误', error: err });
+                    return reject(err);
+                }
+                resolve(result);
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 // 方法：检查所有学生是否都已打分
 const checkAllStudentsScore = (co_id, c_name, group_no, res) => {
-    return new Promise((resolve, reject) => {
-        const searchStuSql = `SELECT course_score.report_score, course_score.practice_score
-                              FROM t_students
-                              JOIN t_class ON t_students.c_id = t_class.c_id
-                              LEFT JOIN course_score ON t_students.s_id = course_score.s_id AND course_score.co_id = ?
-                              WHERE t_class.c_name = ? AND t_class.group_no = ?`;
+    try {
+        return new Promise((resolve, reject) => {
+            const searchStuSql = `SELECT course_score.report_score, course_score.practice_score
+                                  FROM t_students
+                                  JOIN t_class ON t_students.c_id = t_class.c_id
+                                  LEFT JOIN course_score ON t_students.s_id = course_score.s_id AND course_score.co_id = ?
+                                  WHERE t_class.c_name = ? AND t_class.group_no = ?`;
 
-        db.query(searchStuSql, [co_id, c_name, group_no], (err, studentsScores) => {
-            if (err) {
-                console.error('查询学生分数时出错:', err);
-                res.status(500).send({ message: '查询学生分数时发生错误', error: err });
-                return reject(err);
-            }
+            db.query(searchStuSql, [co_id, c_name, group_no], (err, studentsScores) => {
+                if (err) {
+                    console.error('查询学生分数时出错:', err);
+                    res.status(500).send({ message: '查询学生分数时发生错误', error: err });
+                    return reject(err);
+                }
+                try {
+                    // 检查是否所有学生都已打分
+                    const allScoresSet = studentsScores.every(student => student.report_score != null && student.practice_score != null);
 
-            // 检查是否所有学生都已打分
-            const allScoresSet = studentsScores.every(student => student.report_score != null && student.practice_score != null);
-
-            if (allScoresSet) {
-                // 如果所有学生都已打分，更新课程的 is_last 为 1
-                const updateIsLastSql = `UPDATE arrange_course SET is_last = 1 WHERE co_id = ?`;
-                db.query(updateIsLastSql, [co_id], (updateIsLastErr, updateIsLastResult) => {
-                    if (updateIsLastErr) {
-                        console.error('更新课程 is_last 时出错:', updateIsLastErr);
-                        res.status(500).send({ message: '更新课程状态时发生错误', error: updateIsLastErr });
-                        return reject(updateIsLastErr);
+                    if (allScoresSet) {
+                        // 如果所有学生都已打分，更新课程的 is_last 为 1
+                        const updateIsLastSql = `UPDATE arrange_course SET is_last = 1 WHERE co_id = ?`;
+                        db.query(updateIsLastSql, [co_id], (updateIsLastErr, updateIsLastResult) => {
+                            if (updateIsLastErr) {
+                                console.error('更新课程 is_last 时出错:', updateIsLastErr);
+                                res.status(500).send({ message: '更新课程状态时发生错误', error: updateIsLastErr });
+                                return reject(updateIsLastErr);
+                            }
+                            resolve(true); // 返回 true，表示所有学生都已打分
+                        });
+                    } else {
+                        resolve(false); // 返回 false，表示并非所有学生都已打分
                     }
-                    resolve(true); // 返回 true，表示所有学生都已打分
-                });
-            } else {
-                resolve(false); // 返回 false，表示并非所有学生都已打分
-            }
+                } catch (err) {
+                    console.errror(err)
+                }
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 // 方法：计算该学生的所有分项课程成绩的平均值
 const getAverageScoreForStudent = (s_id, res) => {
-    return new Promise((resolve, reject) => {
-        const getScoresSql = `SELECT sub_score 
-                              FROM course_score 
-                              WHERE s_id = ?`;
+    try {
+        return new Promise((resolve, reject) => {
+            const getScoresSql = `SELECT sub_score 
+                                  FROM course_score 
+                                  WHERE s_id = ?`;
 
-        db.query(getScoresSql, [s_id], (err, results) => {
-            if (err) {
-                console.error('查询分项课程成绩时出错:', err);
-                res.status(500).send({ message: '查询分项课程成绩时发生错误', error: err });
-                return reject(err);
-            }
+            db.query(getScoresSql, [s_id], (err, results) => {
+                if (err) {
+                    console.error('查询分项课程成绩时出错:', err);
+                    res.status(500).send({ message: '查询分项课程成绩时发生错误', error: err });
+                    return reject(err);
+                }
 
-            // 计算所有分项课程成绩的平均值
-            if (results.length > 0) {
-                const totalScore = results.reduce((sum, course) => {
-                    return sum + (course.sub_score || 0);  // 如果成绩为空，则视为 0
-                }, 0);
-                const averageScore = totalScore / results.length;
+                // 计算所有分项课程成绩的平均值
+                if (results.length > 0) {
+                    const totalScore = results.reduce((sum, course) => {
+                        return sum + (course.sub_score || 0);  // 如果成绩为空，则视为 0
+                    }, 0);
+                    const averageScore = totalScore / results.length;
 
-                resolve(averageScore);
-            } else {
-                resolve(0);  // 如果没有成绩，返回 0 作为平均值
-            }
+                    resolve(averageScore);
+                } else {
+                    resolve(0);  // 如果没有成绩，返回 0 作为平均值
+                }
+            });
         });
-    });
+    } catch (err) {
+        console.error(err)
+    }
 };
 
 //判断is_last,检查课程完成情况
