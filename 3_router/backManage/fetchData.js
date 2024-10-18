@@ -137,6 +137,11 @@ const fetchDatas = {
                 type: 'text'
             },
             {
+                label: '组别',
+                prop: 'group_no',
+                type: 'number'
+            },
+            {
                 label: '教师工号',
                 prop: 't_id',
                 type: 'number'
@@ -337,7 +342,6 @@ const fetchDataForm = async (table, fields, req, res, joinTables = [], joinCondi
                         return reject('数据库查询错误');
                     }
 
-                    console.log(results)
 
                     // 格式化日期字段
                     results.forEach(item => {
@@ -355,7 +359,6 @@ const fetchDataForm = async (table, fields, req, res, joinTables = [], joinCondi
                         }
                     });
 
-                    console.log(results)
 
                     // 根据 fields 映射结果数据
                     const tableData = results.map((item, index) => {
@@ -372,9 +375,9 @@ const fetchDataForm = async (table, fields, req, res, joinTables = [], joinCondi
             });
         });
 
+
         // 等待两个 Promise 都完成
         const [total, tableData] = await Promise.all([totalPromise, dataPromise]);
-
         // 返回结果给前端
         res.send({
             total,       // 总数

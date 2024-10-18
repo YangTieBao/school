@@ -87,12 +87,12 @@ function addStudentsMsg(addData, res) {
 //增加排课信息
 async function addArrangeMsg(addData, res) {
     try {
-        const { semester, week, day, section, c_name, t_name, t_id, co_name, demo, is_last } = addData
-        const classSql = `select c_id as c_id from t_class where c_name = ?`
+        const { semester, week, day, section, c_name, group_no, t_id, co_name, demo, is_last } = addData
+        const classSql = `select c_id as c_id from t_class where c_name = ? and group_no = ?`
         const courseSql = `select co_id as co_id from t_course where co_name = ?`
         //查询t_class的id
         const classPromise = new Promise((resolve, reject) => {
-            db.query(classSql, c_name, (err, results) => {
+            db.query(classSql, [c_name, group_no], (err, results) => {
                 try {
                     if (err) {
                         console.error('查询数据库出错:', err);
