@@ -154,7 +154,8 @@ const fetchDatas = {
             {
                 label: '课程名',
                 prop: 'co_name',
-                type: 'text'
+                type: 'text',
+                isDisabled: true
             },
             {
                 label: '备注',
