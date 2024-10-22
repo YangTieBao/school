@@ -148,6 +148,15 @@ const deleteDataFunctions = {
             console.log(err)
 
         }
+    },
+    // 课程管理
+    '8': (deleteData, res) => {
+        try {
+            const deleteId = deleteData.map(item => item.co_id);
+            deleteDataToTable('t_course', 'co_id', deleteId, res);
+        } catch (err) {
+            console.log(err)
+        }
     }
 };
 

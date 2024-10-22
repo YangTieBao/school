@@ -1,6 +1,7 @@
 const express = require('express')
 const moment = require('moment')
-const db = require('../../2_mysql/index.js')
+const db = require('../../2_mysql/index.js');
+const e = require('express');
 
 const router = express.Router()
 
@@ -33,8 +34,45 @@ const editDataFunctions = {
     },
     // 成绩管理
     '7': (editData, res) => {
-        editDataToTable('total_score', editData, 'ts_id', editData.ts_id, res);
-    }
+        try {
+            delete editData.name
+            delete editData.c_id
+            delete editData.c_name
+            delete editData.group_no
+            delete editData.t_name
+            delete editData.report_score
+            delete editData.practice_score
+            delete editData.sub_score
+            delete editData.cs_id
+            delete editData.co_id
+            const total_score = editData.summary_score * 0.05 + editData.total_sub_score * 0.95;
+            const grade = (total_score) => {
+                if (total_score >= 90) {
+                    return '优秀';      // 90-100
+                } else if (total_score >= 80) {
+                    return '良好';      // 80-89
+                } else if (total_score >= 70) {
+                    return '中等';      // 70-79
+                } else if (total_score >= 60) {
+                    return '及格';      // 60-69
+                } else {
+                    return '不及格';    // 0-59
+                }
+            };
+
+            const final_grade = grade(total_score); // 计算学生的等级
+
+            editData.grade = final_grade; // 将等级添加到 editData 对象中
+            editData.total_score = total_score; // 将总成绩添加到 editData 对象中
+            editDataToTable('total_score', editData, 'ts_id', editData.ts_id, res);
+        } catch (err) {
+            console.log(err)
+        }
+    },
+    // 课程管理
+    '8': (editData, res) => {
+        editDataToTable('t_course', editData, 'co_id', editData.co_id, res);
+    },
 };
 
 // 封装一个通用的函数用于跟新数据
@@ -88,13 +126,7 @@ function editStudentsMsg(editData, res) {
 //编辑排课信息
 async function editArrangeMsg(editData, res) {
     try {
-        let { semester, week, day, section, c_name, group_no, t_id, co_name, demo, is_last } = editData
-        if (is_last == '是') {
-            is_last = 1;
-        }
-        if (is_last == '否') {
-            is_last = 0;
-        }
+        let { semester, week, day, section, c_name, group_no, t_id, co_name, demo } = editData
         const classSql = `select c_id as c_id from t_class where c_name = ? and group_no = ?`
         const courseSql = `select co_id as co_id from t_course where co_name = ?`
         //查询t_class的id
@@ -136,7 +168,7 @@ async function editArrangeMsg(editData, res) {
         });
 
         const [c_id, co_id] = await Promise.all([classPromise, coursePromise]);
-        editDataToTable('arrange_course', { semester, week, day, section, c_id, t_id, co_id, demo, is_last }, 'ac_id', editData.ac_id, res);
+        editDataToTable('arrange_course', { semester, week, day, section, c_id, t_id, co_id, demo }, 'ac_id', editData.ac_id, res);
     } catch (err) {
         console.error(err)
     }

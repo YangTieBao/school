@@ -34,6 +34,10 @@ const addDataFunctions = {
     '7': (addData, res) => {
         delete addData.name;
         addDataToTable('total_score', addData, res);
+    },
+    //课程管理
+    '8': (addData, res) => {
+        addDataToTable('t_course', addData, res);
     }
 };
 
@@ -148,9 +152,13 @@ async function addStudentsMsg(addData, res) {
 //增加排课信息
 async function addArrangeMsg(addData, res) {
     try {
-        const { semester, week, day, section, c_name, group_no, t_id, co_name, demo, is_last } = addData
+        const { semester, week, day, section, c_name, group_no, t_id, co_name, demo } = addData
         const classSql = `select c_id as c_id from t_class where c_name = ? and group_no = ?`
         const courseSql = `select co_id as co_id from t_course where co_name = ?`
+        const arrangeCourseSql = `select ac_id from arrange_course 
+        join t_class on arrange_course.c_id = t_class.c_id
+        join t_course on arrange_course.co_id = t_course.co_id
+        where t_class.c_name = ? and t_class.group_no = ? and t_course.co_name = ?`
         //查询t_class的id
         const classPromise = new Promise((resolve, reject) => {
             db.query(classSql, [c_name, group_no], (err, results) => {
@@ -189,8 +197,26 @@ async function addArrangeMsg(addData, res) {
             });
         });
 
-        const [c_id, co_id] = await Promise.all([classPromise, coursePromise]);
-        await addDataToTable('arrange_course', { semester, week, day, section, c_id, t_id, co_id, demo, is_last }, res);
+        //查询arrange_course是否有老师带了这个班级与组
+        const arrangeCoursePromise = new Promise((resolve, reject) => {
+            db.query(arrangeCourseSql, [c_name, group_no, co_name], (err, results) => {
+                try {
+                    if (err) {
+                        console.error('查询数据库出错:', err);
+                        return reject({ status: 1 });
+                    }
+                    if (results.length !== 0) {
+                        return res.status(500).send({ status: 3 });
+                    }
+                    resolve(true);
+                } catch (err) {
+                    console.error(err)
+                }
+            });
+        });
+
+        const [c_id, co_id, isarrangeCourse] = await Promise.all([classPromise, coursePromise, arrangeCoursePromise]);
+        await addDataToTable('arrange_course', { semester, week, day, section, c_id, t_id, co_id, demo }, res);
         await createSubScoresForGroup(c_name, co_id, group_no, res)
     } catch (err) {
         console.error(err)
