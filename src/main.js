@@ -10,7 +10,8 @@ Vue.use(ElementUI);
 
 Vue.config.productionTip = false
 
-Vue.prototype.$global = { baseUrl: 'http://localhost:3000' }
+// Vue.prototype.$global = { baseUrl: 'http://120.25.218.50:3000/backManage', loginUrl: 'http://120.25.218.50:3000' }
+Vue.prototype.$global = { baseUrl: 'http://localhost:3000/backManage', loginUrl: 'http://localhost:3000' }
 
 new Vue({
   router,
